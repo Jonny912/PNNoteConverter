@@ -2,7 +2,9 @@
 //
 
 #include <iostream>
+#include <fstream>
 #include "pugixml.hpp"
+#include "../packages/nlohmann.json.3.10.4/build/native/include/nlohmann/json.hpp"
 
 int main()
 {
@@ -13,14 +15,23 @@ int main()
     if (!result)
         return -1;
 
-    //auto notes = doc.children("PlayerNotes");
-    auto notes = doc.document_element();
-    
-    for (auto note : notes)
+
+    const auto& notes = doc.child("PlayerNotes").children("Note");
+    int count = 0;
+    for (const auto& note : notes)
     {
-        auto player = doc.children("Note");
-        for (auto attr : player)
-            std::cout << note.attribute("playerName").value() << std::endl;
+        std::cout << "Node #" << ++count << std::endl;
+
+        nlohmann::json noteJson;
+        noteJson["chatDisabled"] = note.child_value("disableChat") ? true : false;
+        noteJson["playerNickname"] = note.child_value("playerName");
+        noteJson["tagIndex"] = atol(note.child_value("playerMark"));
+        noteJson["text"] = note.child_value("quickNote");
+
+        auto dump = noteJson.dump(4);
+
+        std::ofstream jsonOut("out.json", std::ifstream::app);
+        
+        jsonOut << dump << "," << std::endl;
     }
 }
-
